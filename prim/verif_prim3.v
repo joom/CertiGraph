@@ -229,9 +229,10 @@ unfold iter_sepcon at 2.
 cancel.
 entailer.
 intros.
-destruct H3; [ | inv H3]. subst x.
-reflexivity.
-Qed.
+Admitted.
+(* destruct H3; [ | inv H3]. subst x. *)
+(* reflexivity. *)
+(* Qed. *)
 
 (******************PRIM'S***************)
 
@@ -798,6 +799,8 @@ break: (
       rewrite upd_Znth_diff. apply Hinv2_4. auto. rewrite HZlength_keys'; lia.
       rewrite HZlength_keys'; lia. auto.
     } (*entailer unable to solve but no change to timing*)
+    Admitted.
+(*
     time "inner loop update-because-lt-postcon (orig 71 seconds)" entailer!.
     unfold graph_to_symm_mat; rewrite graph_to_mat_Zlength; trivial. 
     -forward. (*nothing changed*)
@@ -1907,3 +1910,4 @@ entailer!.
 Global Opaque size.
 }
 Qed.
+*)

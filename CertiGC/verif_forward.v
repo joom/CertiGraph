@@ -3,6 +3,19 @@ Require Import CertiGraph.msl_ext.ramification_lemmas.
 
 Local Open Scope logic.
 
+Lemma firstn_all : forall {A} n (l : list A), (length l <= n)%nat -> firstn n l = l.
+Proof.
+  induction n; destruct l; auto; simpl; intros; try lia.
+  rewrite IHn; auto; lia.
+Qed.
+
+Lemma sublist_all : forall {A} i (l : list A), Zlength l <= i -> sublist 0 i l = l.
+Proof.
+  intros; unfold_sublist_old; simpl.
+  apply firstn_all.
+  rewrite Zlength_correct in *; rep_lia.
+Qed.
+
 Lemma root_valid_int_or_ptr: forall g (roots: roots_t) root outlier,
     In root roots ->
     roots_compatible g outlier roots ->

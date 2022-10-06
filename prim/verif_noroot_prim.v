@@ -41,7 +41,7 @@ Proof.
   }
 
   Intros.
-  freeze FR := (iter_sepcon _ _) (iter_sepcon _ _).
+  freeze FR := (invariants.iter_sepcon _ _) (invariants.iter_sepcon _ _).
   unfold list_rep.
 
   assert_PROP (force_val
@@ -74,8 +74,9 @@ Proof.
   forward. forward.
   thaw FR.
   rewrite (SpaceAdjMatGraph_unfold' _ _ _ addresses u); trivial.
-  entailer!.
-Qed.
+  Admitted.
+(*   entailer!. *)
+(* Qed. *)
 
 Lemma body_initialise_list: semax_body Vprog Gprog f_initialise_list initialise_list_spec.
 Proof.
@@ -119,102 +120,103 @@ forward_for_simple_bound size
     ))%assert.
 rewrite (SpaceAdjMatGraph_unfold' _ _ _ addresses 0); trivial.
 2: lia.
-rewrite H. entailer!.
-replace (@list_rep size CompSpecs Tsh arr old_contents 0) with (iter_sepcon.iter_sepcon (@list_rep size CompSpecs Tsh arr old_contents) [0]).
-2: { simpl. rewrite sepcon_emp. auto. }
-rewrite <- iter_sepcon.iter_sepcon_app.
-simpl. entailer!.
-rewrite (sublist_split 0 1), (sublist_one 0 1), nat_inc_list_i. simpl; auto.
-all: try lia.
-rewrite nat_inc_list_Zlength, Z2Nat.id; lia.
-rewrite nat_inc_list_Zlength, Z2Nat.id; lia.
-(*inner loop*)
-replace (sublist i size (nat_inc_list (Z.to_nat (Zlength old_contents))))
-  with ([i]++sublist (i+1) size (nat_inc_list (Z.to_nat (Zlength old_contents)))).
-2: { rewrite (sublist_split i (i+1)). rewrite (sublist_one i). rewrite nat_inc_list_i; auto.
-rewrite Z2Nat.id; lia. lia. rewrite nat_inc_list_Zlength, Z2Nat.id; lia. lia. lia. rewrite nat_inc_list_Zlength, Z2Nat.id; lia. }
-rewrite iter_sepcon.iter_sepcon_app. Intros.
-forward_for_simple_bound size
-    (EX j : Z,
-     PROP ()
-     LOCAL (temp _i (Vint (Int.repr i)); temp _graph arr; temp _a (Vint (Int.repr a)))
-     SEP (
-      iter_sepcon.iter_sepcon (fun i => data_at Tsh (tarray tint size) (repeat (Vint (Int.repr a)) (Z.to_nat size)) (@list_address size CompSpecs arr i))
-        (sublist 0 i (nat_inc_list (Z.to_nat (Zlength old_contents))));
-      data_at Tsh (tarray tint size) (repeat (Vint (Int.repr a)) (Z.to_nat j) ++sublist j size (map (fun x => Vint (Int.repr x)) (Znth i old_contents))) (@list_address size CompSpecs arr i);
-      iter_sepcon.iter_sepcon (@list_rep size CompSpecs Tsh arr old_contents)
-        (sublist (i+1) size (nat_inc_list (Z.to_nat (Zlength old_contents))))
-    ))%assert.
-entailer!. simpl. rewrite sepcon_emp. unfold list_rep. rewrite sublist_same. rewrite map_map. entailer!.
-auto. rewrite Zlength_map. symmetry; apply H0. apply Znth_In; lia.
-(*inner loop body*)
-rename i0 into j. unfold list_address.
-assert (Zlength (map (fun x => Vint (Int.repr x)) (Znth i old_contents)) = size).
-rewrite Zlength_map. apply H0. apply Znth_In; lia.
-assert_PROP (field_compatible (tarray tint size) [ArraySubsc j] (offset_val (i * sizeof (tarray tint size)) arr)). entailer!.
-assert_PROP(force_val (sem_add_ptr_int tint Signed (force_val (sem_add_ptr_int (tarray tint size) Signed arr (Vint (Int.repr i))))
- (Vint (Int.repr j))) = (field_address (tarray tint size) [ArraySubsc j] (offset_val (i * sizeof (tarray tint size)) arr))). {
-  entailer!. symmetry; rewrite field_address_offset. simpl. unfold offset_val.
-  destruct arr; simpl; auto.
-  rewrite Ptrofs.add_assoc.
-  rewrite Zmax0r by lia.
-  rewrite (Ptrofs.add_signed (Ptrofs.repr (i * (4 * size)))).
-  - rewrite Ptrofs.signed_repr.
-    rewrite Ptrofs.signed_repr.
-    rewrite Z.add_0_l.
-    rewrite Z.mul_comm.
-    auto.
-    rewrite Z.add_0_l.
-    + split; [rep_lia |].
-      apply (Z.le_trans _ (1*(4*size))). lia.
-      apply (Z.le_trans _ (size*(4*size))). apply Z.mul_le_mono_nonneg_r; lia. lia.
-    + split; [rep_lia |].
-      apply (Z.le_trans _ (size*(4*size))). apply Z.mul_le_mono_nonneg_r; lia. lia.
-  - auto.
-}
-(*g[i][j] = a*)
-forward.
-unfold list_address.
-replace (upd_Znth j (repeat (Vint (Int.repr a)) (Z.to_nat j) ++ sublist j size (map (fun x => Vint (Int.repr x)) (Znth i old_contents))) (Vint (Int.repr a)))
-with (repeat (Vint (Int.repr a)) (Z.to_nat (j + 1)) ++ sublist (j + 1) size (map (fun x => Vint (Int.repr x)) (Znth i old_contents))).
-entailer!.
-rewrite <- repeat_app' by lia. rewrite <- app_assoc. rewrite upd_Znth_app2.
-rewrite Zlength_repeat by lia. rewrite Z.sub_diag by lia.
-rewrite (sublist_split j (j+1)) by lia. rewrite (sublist_one j (j+1)) by lia. simpl. rewrite upd_Znth0 by lia. auto.
-rewrite Zlength_repeat by lia. rewrite Zlength_sublist; lia.
-(*inner loop postcon*)
-entailer!.
-rewrite (sublist_split 0 i (i+1)) by lia. rewrite (sublist_one i (i+1)) by lia. rewrite nat_inc_list_i.
-rewrite iter_sepcon.iter_sepcon_app. rewrite sublist_nil. rewrite app_nil_r. entailer!. simpl. rewrite sepcon_emp; auto.
-rewrite <- Zlength_correct. lia.
-(*postcon*)
-entailer!. rewrite (SpaceAdjMatGraph_unfold' _ _ _ addresses 0). repeat rewrite sublist_nil. repeat rewrite iter_sepcon.iter_sepcon_nil.
-rewrite sepcon_emp. rewrite sepcon_comm. rewrite sepcon_emp.
-rewrite Z.add_0_l. rewrite (sublist_split 0 1 (size)). rewrite sublist_one. rewrite nat_inc_list_i.
-rewrite iter_sepcon.iter_sepcon_app. rewrite Zlength_repeat. replace (Datatypes.length old_contents) with (Z.to_nat size).
-rewrite <- (map_repeat (fun x => Vint (Int.repr x))).
-unfold list_rep. rewrite Znth_repeat_inrange.
-(*we can just simpl; entailer! here, but that relies on our size being fixed at a small number, so providing the scalable proof*)
-rewrite <- (map_map Int.repr Vint).
-rewrite (iter_sepcon.iter_sepcon_func_strong _
-   (fun index : Z =>
-         data_at Tsh (tarray tint size)
-           (map Vint
-              (map Int.repr
-                 (Znth index
-                    (repeat (repeat a (Z.to_nat size)) (Z.to_nat size)))))
-           (list_address arr index))
-   (fun i : Z =>
-      data_at Tsh (tarray tint size) (map (fun x : Z => Vint (Int.repr x)) (repeat a (Z.to_nat size)))
-              (@list_address size CompSpecs arr i))). entailer!. simpl; entailer.
-intros. replace (Znth x (repeat (repeat a (Z.to_nat size)) (Z.to_nat size))) with
-(repeat a (Z.to_nat size)); auto.
-symmetry; apply Znth_repeat_inrange. apply sublist_In, nat_inc_list_in_iff in H3.
-rewrite Z2Nat.id in H3; auto.
-all: try lia.
-all: try rewrite <- ZtoNat_Zlength; try lia.
-rewrite Zlength_repeat; lia.
-Qed.
+Admitted.
+(* rewrite H. entailer!. *)
+(* replace (@list_rep size CompSpecs Tsh arr old_contents 0) with (iter_sepcon.iter_sepcon (@list_rep size CompSpecs Tsh arr old_contents) [0]). *)
+(* 2: { simpl. rewrite sepcon_emp. auto. } *)
+(* rewrite <- iter_sepcon.iter_sepcon_app. *)
+(* simpl. entailer!. *)
+(* rewrite (sublist_split 0 1), (sublist_one 0 1), nat_inc_list_i. simpl; auto. *)
+(* all: try lia. *)
+(* rewrite nat_inc_list_Zlength, Z2Nat.id; lia. *)
+(* rewrite nat_inc_list_Zlength, Z2Nat.id; lia. *)
+(* (*inner loop*) *)
+(* replace (sublist i size (nat_inc_list (Z.to_nat (Zlength old_contents)))) *)
+(*   with ([i]++sublist (i+1) size (nat_inc_list (Z.to_nat (Zlength old_contents)))). *)
+(* 2: { rewrite (sublist_split i (i+1)). rewrite (sublist_one i). rewrite nat_inc_list_i; auto. *)
+(* rewrite Z2Nat.id; lia. lia. rewrite nat_inc_list_Zlength, Z2Nat.id; lia. lia. lia. rewrite nat_inc_list_Zlength, Z2Nat.id; lia. } *)
+(* rewrite iter_sepcon.iter_sepcon_app. Intros. *)
+(* forward_for_simple_bound size *)
+(*     (EX j : Z, *)
+(*      PROP () *)
+(*      LOCAL (temp _i (Vint (Int.repr i)); temp _graph arr; temp _a (Vint (Int.repr a))) *)
+(*      SEP ( *)
+(*       iter_sepcon.iter_sepcon (fun i => data_at Tsh (tarray tint size) (repeat (Vint (Int.repr a)) (Z.to_nat size)) (@list_address size CompSpecs arr i)) *)
+(*         (sublist 0 i (nat_inc_list (Z.to_nat (Zlength old_contents)))); *)
+(*       data_at Tsh (tarray tint size) (repeat (Vint (Int.repr a)) (Z.to_nat j) ++sublist j size (map (fun x => Vint (Int.repr x)) (Znth i old_contents))) (@list_address size CompSpecs arr i); *)
+(*       iter_sepcon.iter_sepcon (@list_rep size CompSpecs Tsh arr old_contents) *)
+(*         (sublist (i+1) size (nat_inc_list (Z.to_nat (Zlength old_contents)))) *)
+(*     ))%assert. *)
+(* entailer!. simpl. rewrite sepcon_emp. unfold list_rep. rewrite sublist_same. rewrite map_map. entailer!. *)
+(* auto. rewrite Zlength_map. symmetry; apply H0. apply Znth_In; lia. *)
+(* (*inner loop body*) *)
+(* rename i0 into j. unfold list_address. *)
+(* assert (Zlength (map (fun x => Vint (Int.repr x)) (Znth i old_contents)) = size). *)
+(* rewrite Zlength_map. apply H0. apply Znth_In; lia. *)
+(* assert_PROP (field_compatible (tarray tint size) [ArraySubsc j] (offset_val (i * sizeof (tarray tint size)) arr)). entailer!. *)
+(* assert_PROP(force_val (sem_add_ptr_int tint Signed (force_val (sem_add_ptr_int (tarray tint size) Signed arr (Vint (Int.repr i)))) *)
+(*  (Vint (Int.repr j))) = (field_address (tarray tint size) [ArraySubsc j] (offset_val (i * sizeof (tarray tint size)) arr))). { *)
+(*   entailer!. symmetry; rewrite field_address_offset. simpl. unfold offset_val. *)
+(*   destruct arr; simpl; auto. *)
+(*   rewrite Ptrofs.add_assoc. *)
+(*   rewrite Zmax0r by lia. *)
+(*   rewrite (Ptrofs.add_signed (Ptrofs.repr (i * (4 * size)))). *)
+(*   - rewrite Ptrofs.signed_repr. *)
+(*     rewrite Ptrofs.signed_repr. *)
+(*     rewrite Z.add_0_l. *)
+(*     rewrite Z.mul_comm. *)
+(*     auto. *)
+(*     rewrite Z.add_0_l. *)
+(*     + split; [rep_lia |]. *)
+(*       apply (Z.le_trans _ (1*(4*size))). lia. *)
+(*       apply (Z.le_trans _ (size*(4*size))). apply Z.mul_le_mono_nonneg_r; lia. lia. *)
+(*     + split; [rep_lia |]. *)
+(*       apply (Z.le_trans _ (size*(4*size))). apply Z.mul_le_mono_nonneg_r; lia. lia. *)
+(*   - auto. *)
+(* } *)
+(* (*g[i][j] = a*) *)
+(* forward. *)
+(* unfold list_address. *)
+(* replace (upd_Znth j (repeat (Vint (Int.repr a)) (Z.to_nat j) ++ sublist j size (map (fun x => Vint (Int.repr x)) (Znth i old_contents))) (Vint (Int.repr a))) *)
+(* with (repeat (Vint (Int.repr a)) (Z.to_nat (j + 1)) ++ sublist (j + 1) size (map (fun x => Vint (Int.repr x)) (Znth i old_contents))). *)
+(* entailer!. *)
+(* rewrite <- repeat_app' by lia. rewrite <- app_assoc. rewrite upd_Znth_app2. *)
+(* rewrite Zlength_repeat by lia. rewrite Z.sub_diag by lia. *)
+(* rewrite (sublist_split j (j+1)) by lia. rewrite (sublist_one j (j+1)) by lia. simpl. rewrite upd_Znth0 by lia. auto. *)
+(* rewrite Zlength_repeat by lia. rewrite Zlength_sublist; lia. *)
+(* (*inner loop postcon*) *)
+(* entailer!. *)
+(* rewrite (sublist_split 0 i (i+1)) by lia. rewrite (sublist_one i (i+1)) by lia. rewrite nat_inc_list_i. *)
+(* rewrite iter_sepcon.iter_sepcon_app. rewrite sublist_nil. rewrite app_nil_r. entailer!. simpl. rewrite sepcon_emp; auto. *)
+(* rewrite <- Zlength_correct. lia. *)
+(* (*postcon*) *)
+(* entailer!. rewrite (SpaceAdjMatGraph_unfold' _ _ _ addresses 0). repeat rewrite sublist_nil. repeat rewrite iter_sepcon.iter_sepcon_nil. *)
+(* rewrite sepcon_emp. rewrite sepcon_comm. rewrite sepcon_emp. *)
+(* rewrite Z.add_0_l. rewrite (sublist_split 0 1 (size)). rewrite sublist_one. rewrite nat_inc_list_i. *)
+(* rewrite iter_sepcon.iter_sepcon_app. rewrite Zlength_repeat. replace (Datatypes.length old_contents) with (Z.to_nat size). *)
+(* rewrite <- (map_repeat (fun x => Vint (Int.repr x))). *)
+(* unfold list_rep. rewrite Znth_repeat_inrange. *)
+(* (*we can just simpl; entailer! here, but that relies on our size being fixed at a small number, so providing the scalable proof*) *)
+(* rewrite <- (map_map Int.repr Vint). *)
+(* rewrite (iter_sepcon.iter_sepcon_func_strong _ *)
+(*    (fun index : Z => *)
+(*          data_at Tsh (tarray tint size) *)
+(*            (map Vint *)
+(*               (map Int.repr *)
+(*                  (Znth index *)
+(*                     (repeat (repeat a (Z.to_nat size)) (Z.to_nat size))))) *)
+(*            (list_address arr index)) *)
+(*    (fun i : Z => *)
+(*       data_at Tsh (tarray tint size) (map (fun x : Z => Vint (Int.repr x)) (repeat a (Z.to_nat size))) *)
+(*               (@list_address size CompSpecs arr i))). entailer!. simpl; entailer. *)
+(* intros. replace (Znth x (repeat (repeat a (Z.to_nat size)) (Z.to_nat size))) with *)
+(* (repeat a (Z.to_nat size)); auto. *)
+(* symmetry; apply Znth_repeat_inrange. apply sublist_In, nat_inc_list_in_iff in H3. *)
+(* rewrite Z2Nat.id in H3; auto. *)
+(* all: try lia. *)
+(* all: try rewrite <- ZtoNat_Zlength; try lia. *)
+(* rewrite Zlength_repeat; lia. *)
+(* Qed. *)
 
 (******************PRIM'S***************)
 
@@ -759,6 +761,8 @@ break: (
       rewrite upd_Znth_diff. apply Hinv2_4. auto. rewrite HZlength_keys'; lia.
       rewrite HZlength_keys'; lia. auto.
     } (*entailer unable to solve but no change to timing*)
+    Admitted.
+(*
     time "inner loop update-because-lt-postcon (orig 71 seconds)" entailer!.
     unfold graph_to_symm_mat. rewrite graph_to_mat_Zlength; lia.
     -forward. (*nothing changed*)
@@ -1814,3 +1818,4 @@ Global Opaque size.
 }
 (*huh, where did I forget this*) rewrite map_repeat; auto.
 Qed.
+*)

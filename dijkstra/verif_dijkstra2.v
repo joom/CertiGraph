@@ -1185,7 +1185,7 @@ Local Open Scope Z_scope.
 
             split3; [| | split3; [| |split3; [| |split3;
                                                  [| |split3; [| |split3;
-                    [| |split3; [| |split]]]]]]]; trivial.
+                    [| |split3; [| |]]]]]]]; trivial.
             ++ (* if popped = [], then
                 prove inv_popped for [u].
                 if popped <> [], then we're set
@@ -1292,9 +1292,7 @@ Local Open Scope Z_scope.
                2: right; apply H4; inversion 1.
                simpl. left. symmetry. apply Hl; trivial.
 
-            ++ red. intros. inversion H21.
-
-            ++ apply in_eq.
+            ++ red; constructor; auto.
 
             ++ red. apply Forall_cons; trivial.
 

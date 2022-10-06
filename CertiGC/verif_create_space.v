@@ -24,8 +24,8 @@ Proof.
     + Intros p. if_tac.
       * subst p. forward_if False.
         -- unfold all_string_constants. Intros.
-           forward_call ((gv ___stringlit_7),
-                         (map init_data2byte (gvar_init v___stringlit_7)), rsh).
+           forward_call ((gv ___stringlit_6),
+                         (map init_data2byte (gvar_init v___stringlit_6)), rsh).
            exfalso; assumption.
         -- first [exfalso; now apply H0 | inversion H0 ].
       * Intros. forward_if (
